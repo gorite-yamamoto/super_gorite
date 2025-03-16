@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Temperature Display</title>
+    <link rel="stylesheet" type="text/css" href="../static/style.css">
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
@@ -19,9 +21,14 @@
             }, 1000);
         });
     </script>
+    <style>
+        .text {
+            color: red;
+        }
+    </style>
 </head>
 <body>
-    <h1>現在の温度</h1>
+    <h1 class="text">現在の温度</h1>
     <p id="temperature">読み込み中...</p>
 </body>
 </html>

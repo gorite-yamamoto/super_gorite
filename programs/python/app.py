@@ -2,7 +2,7 @@ import serial
 import time
 from flask import Flask, render_template, jsonify
 
-app = Flask(__name__, template_folder='/Users/yamamototakuma/Desktop/python/発表/programs/html')
+app = Flask(__name__, template_folder='/Users/yamamototakuma/Desktop/python/発表/programs/html',static_folder='../static/style.css')
 
 # シリアルポートの設定
 ser = serial.Serial('/dev/tty.usbmodem14302', baudrate=115200, timeout=1)  # Micro:bitのポートを指定
@@ -27,8 +27,11 @@ def index():
 
 @app.route('/temperature')
 def temperature():
+    
     read_temperature()  # 温度を読み取る
     return jsonify({'temperature': current_temperature})  # JSONで温度データを返す
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5002)
