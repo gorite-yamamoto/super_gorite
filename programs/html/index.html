@@ -1,34 +1,51 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Temperature Display</title>
-    <link rel="stylesheet" type="text/css" href="../static/style.css">
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            // 1秒ごとに温度データを更新
-            setInterval(function() {
-                $.get('/temperature', function(data) {
-                    if (data.temperature !== null) {
-                        $('#temperature').text(data.temperature + " °C");
-                    } else {
-                        $('#temperature').text("データ取得エラー");
-                    }
-                });
-            }, 1000);
-        });
-    </script>
-    <style>
-        .text {
-            color: red;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Micro:bit 温度表示</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <h1 class="text">現在の温度</h1>
-    <p id="temperature">読み込み中...</p>
+  <h1>Micro:bit 温度データ</h1>
+  <div>
+    <h2>Micro:bit 1 Temperature: <span id="temp1">Loading...</span></h2>
+    <p id="error1" style="color:red;"></p>
+  </div>
+  <div>
+    <h2>Micro:bit 2 Temperature: <span id="temp2">Loading...</span></h2>
+    <p id="error2" style="color:red;"></p>
+  </div>
+  <script>
+    function fetchData() {
+      $.ajax({
+        url: '/temperature',
+        method: 'GET',
+        success: function(data) {
+          if (data.temperature1 !== null) {
+            $('#temp1').text(data.temperature1 + "℃");
+            $('#error1').text('');
+          } else {
+            $('#temp1').text('N/A');
+            $('#error1').text(data.error_message1);
+          }
+          if (data.temperature2 !== null) {
+            $('#temp2').text(data.temperature2 + "℃");
+            $('#error2').text('');
+          } else {
+            $('#temp2').text('N/A');
+            $('#error2').text(data.error_message2);
+          }
+        },
+        error: function() {
+          $('#error1').text('Error fetching data.');
+          $('#error2').text('Error fetching data.');
+        }
+      });
+    }
+    $(document).ready(function(){
+      fetchData();
+      setInterval(fetchData, 1000); // 1秒ごとに更新
+    });
+  </script>
 </body>
 </html>
