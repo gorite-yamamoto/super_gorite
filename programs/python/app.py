@@ -1,94 +1,42 @@
-import serial
-import time
 from flask import Flask, render_template, jsonify
+import serial
 import threading
+import time
 
-# Flask にテンプレートフォルダのパスを指定します。
-app = Flask(__name__, template_folder='/Users/yamamototakuma/Desktop/python/発表/programs/html')
+app = Flask(__name__)
 
-# シリアルポートの設定
-try:
-    ser1 = serial.Serial('/dev/tty.usbmodem14202', baudrate=115200, timeout=1)  # 1台目のMicro:bit
-except Exception as e:
-    ser1 = None
-    print("Error opening Micro:bit 1:", e)
+# シリアルポートの設定（適宜変更してください）
+SERIAL_PORT = '/dev/tty.usbmodem114302'  # Micro:bitが接続されているポート
+BAUD_RATE = 115200
 
-try:
-    ser2 = serial.Serial('/dev/tty.usbmodem14302', baudrate=115200, timeout=1)  # 2台目のMicro:bit
-except Exception as e:
-    ser2 = None
-    print("Error opening Micro:bit 2:", e)
+# 温度データを保持する変数
+current_temperature = None
 
-# グローバル変数：温度データとエラーメッセージ
-temperature1 = None
-temperature2 = None
-error_message1 = None
-error_message2 = None
-
+# シリアル通信からデータを読み取る関数
 def read_temperature():
-    global temperature1, temperature2, error_message1, error_message2, ser1, ser2
-    while True:
-        # --- 1台目のMicro:bit ---
-        if ser1:
-            try:
-                if ser1.in_waiting > 0:
-                    data1 = ser1.readline().decode('utf-8').strip()
-                    if data1.isdigit():
-                        temperature1 = data1
-                        error_message1 = None
-                    else:
-                        temperature1 = None
-                        error_message1 = "Invalid data from Micro:bit 1"
-                else:
-                    # データが取得できない場合は値をクリア
-                    temperature1 = None
-                    error_message1 = "Micro:bit 1 not connected or no data"
-            except Exception as e:
-                temperature1 = None
-                error_message1 = f"Error reading from Micro:bit 1: {e}"
-        else:
-            temperature1 = None
-            error_message1 = "Micro:bit 1 serial not open"
+    global current_temperature
+    with serial.Serial(SERIAL_PORT, BAUD_RATE) as ser:
+        while True:
+            if ser.in_waiting > 0:
+                try:
+                    temp = ser.readline().decode('utf-8').strip()  # シリアルから読み取った温度をデコード
+                    current_temperature = temp  # 現在の温度を更新
+                except Exception as e:
+                    print(f"Error reading data: {e}")
+            time.sleep(1)
 
-        # --- 2台目のMicro:bit ---
-        if ser2:
-            try:
-                if ser2.in_waiting > 0:
-                    data2 = ser2.readline().decode('utf-8').strip()
-                    if data2.isdigit():
-                        temperature2 = data2
-                        error_message2 = None
-                    else:
-                        temperature2 = None
-                        error_message2 = "Invalid data from Micro:bit 2"
-                else:
-                    temperature2 = None
-                    error_message2 = "Micro:bit 2 not connected or no data"
-            except Exception as e:
-                temperature2 = None
-                error_message2 = f"Error reading from Micro:bit 2: {e}"
-        else:
-            temperature2 = None
-            error_message2 = "Micro:bit 2 serial not open"
-
-        time.sleep(1)
-
-@app.route('/temperature')
-def temperature():
-    return jsonify({
-        'temperature1': temperature1,
-        'temperature2': temperature2,
-        'error_message1': error_message1,
-        'error_message2': error_message2
-    })
+# データ更新用のスレッドを開始
+thread = threading.Thread(target=read_temperature)
+thread.daemon = True  # プログラム終了時にスレッドも終了
+thread.start()
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+@app.route('/temperature')
+def temperature():
+    return jsonify(temperature=current_temperature)
+
 if __name__ == '__main__':
-    # バックグラウンドスレッドで温度データの読み取りを開始
-    thread = threading.Thread(target=read_temperature)
-    thread.daemon = True  # プログラム終了時にスレッドも終了
-    thread.start()
-    app.run(debug=True, host='0.0.0.0', port=5002)
+    app.run(debug=True)

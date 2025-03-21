@@ -1,51 +1,27 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>Micro:bit 温度表示</title>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>温度表示</title>
+    <script>
+        function updateTemperature() {
+            fetch('/temperature')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('temperature').innerText = data.temperature ? `${data.temperature} °C` : 'データ取得中...';
+                })
+                .catch(error => {
+                    console.error('Error fetching temperature data:', error);
+                    document.getElementById('temperature').innerText = 'エラーが発生しました';
+                });
+        }
+
+        setInterval(updateTemperature, 1000);  // 1秒ごとに温度を更新
+    </script>
 </head>
 <body>
-  <h1>Micro:bit 温度データ</h1>
-  <div>
-    <h2>Micro:bit 1 Temperature: <span id="temp1">Loading...</span></h2>
-    <p id="error1" style="color:red;"></p>
-  </div>
-  <div>
-    <h2>Micro:bit 2 Temperature: <span id="temp2">Loading...</span></h2>
-    <p id="error2" style="color:red;"></p>
-  </div>
-  <script>
-    function fetchData() {
-      $.ajax({
-        url: '/temperature',
-        method: 'GET',
-        success: function(data) {
-          if (data.temperature1 !== null) {
-            $('#temp1').text(data.temperature1 + "℃");
-            $('#error1').text('');
-          } else {
-            $('#temp1').text('N/A');
-            $('#error1').text(data.error_message1);
-          }
-          if (data.temperature2 !== null) {
-            $('#temp2').text(data.temperature2 + "℃");
-            $('#error2').text('');
-          } else {
-            $('#temp2').text('N/A');
-            $('#error2').text(data.error_message2);
-          }
-        },
-        error: function() {
-          $('#error1').text('Error fetching data.');
-          $('#error2').text('Error fetching data.');
-        }
-      });
-    }
-    $(document).ready(function(){
-      fetchData();
-      setInterval(fetchData, 1000); // 1秒ごとに更新
-    });
-  </script>
+    <h1>Micro:bit 温度表示</h1>
+    <div>現在の温度: <span id="temperature">データ取得中...</span></div>
 </body>
 </html>
