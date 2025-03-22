@@ -3,25 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>温度表示</title>
-    <script>
-        function updateTemperature() {
-            fetch('/temperature')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('temperature').innerText = data.temperature ? `${data.temperature} °C` : 'データ取得中...';
-                })
-                .catch(error => {
-                    console.error('Error fetching temperature data:', error);
-                    document.getElementById('temperature').innerText = 'エラーが発生しました';
-                });
+    <title>温度監視</title>
+    <style>
+        /* エラーメッセージ用のスタイル */
+        .error {
+            color: red;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin: 10px 0;
         }
 
-        setInterval(updateTemperature, 1000);  // 1秒ごとに温度を更新
+        /* 正常な温度表示用のスタイル */
+        .temperature {
+            color: green;
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+        /* 全体的なレイアウト */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #temperature-container {
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        function updateTemperatureDisplay(data) {
+            const container = document.getElementById('temperature-container');
+            container.innerHTML = '';  // クリア
+
+            Object.keys(data).forEach(port => {
+                const result = data[port];
+                const tempElement = document.createElement('div');
+
+                if (result.error) {
+                    tempElement.innerHTML = `<strong>${port}:</strong> <span class="error">${result.error}</span>`;
+                } else {
+                    tempElement.innerHTML = `<strong>${port}:</strong> <span class="temperature">現在の温度: ${result.temperature}℃</span>`;
+                }
+                container.appendChild(tempElement);
+            });
+        }
+
+        function fetchTemperature() {
+            fetch('/get_temperature')
+                .then(response => response.json())
+                .then(data => updateTemperatureDisplay(data))
+                .catch(error => console.error('通信エラー:', error));
+        }
+
+        setInterval(fetchTemperature, 1000);
+        window.onload = fetchTemperature;
     </script>
 </head>
 <body>
-    <h1>Micro:bit 温度表示</h1>
-    <div>現在の温度: <span id="temperature">データ取得中...</span></div>
+    <h1>micro:bit 温度監視</h1>
+    <div id="temperature-container"></div>
 </body>
 </html>

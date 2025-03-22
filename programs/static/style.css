@@ -1,0 +1,26 @@
+/* エラーメッセージ用のスタイル */
+.error {
+    color: red;
+    font-weight: bold;
+    font-size: 1.2em;
+    margin: 10px 0;
+}
+
+/* 正常な温度表示用のスタイル */
+.temperature {
+    color: green;
+    font-size: 1.2em;
+    margin: 10px 0;
+}
+
+/* 全体的なレイアウト */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    padding: 20px;
+    margin: 0;
+}
+
+h1 {
+    color: #333;
+}
