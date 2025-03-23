@@ -3,70 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>温度監視</title>
+    <title>熱中症対策</title>
     <style>
-        /* エラーメッセージ用のスタイル */
-        .error {
-            color: red;
-            font-weight: bold;
-            font-size: 1.2em;
-            margin: 10px 0;
-        }
-
-        /* 正常な温度表示用のスタイル */
-        .temperature {
-            color: green;
-            font-size: 1.2em;
-            margin: 10px 0;
-        }
-
-        /* 全体的なレイアウト */
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            padding: 20px;
             margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: row;
         }
-
-        h1 {
-            color: #333;
+        #left {
+            width: 50%;
+            padding: 20px;
+            border-right: 2px solid #000;
         }
-
-        #temperature-container {
+        #right {
+            width: 50%;
+            padding: 20px;
+        }
+        #temperature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .temperature-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .temperature-item strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .error {
+            color: red;
+        }
+        .time {
+            text-align: right;
+            font-size: 1.2em;
             margin-top: 20px;
         }
+        #weather {
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+        #heatstroke-risk {
+            font-weight: bold; /* 熱中症危険度を太字にする */
+        }
     </style>
-    <script>
-        function updateTemperatureDisplay(data) {
-            const container = document.getElementById('temperature-container');
-            container.innerHTML = '';  // クリア
-
-            Object.keys(data).forEach(port => {
-                const result = data[port];
-                const tempElement = document.createElement('div');
-
-                if (result.error) {
-                    tempElement.innerHTML = `<strong>${port}:</strong> <span class="error">${result.error}</span>`;
-                } else {
-                    tempElement.innerHTML = `<strong>${port}:</strong> <span class="temperature">現在の温度: ${result.temperature}℃</span>`;
-                }
-                container.appendChild(tempElement);
-            });
-        }
-
-        function fetchTemperature() {
-            fetch('/get_temperature')
-                .then(response => response.json())
-                .then(data => updateTemperatureDisplay(data))
-                .catch(error => console.error('通信エラー:', error));
-        }
-
-        setInterval(fetchTemperature, 1000);
-        window.onload = fetchTemperature;
-    </script>
 </head>
 <body>
-    <h1>micro:bit 温度監視</h1>
-    <div id="temperature-container"></div>
+    <div id="left">
+        <h2>温度情報</h2>
+        <ul id="temperature-list">
+        </ul>
+        <div class="time" id="time">
+        </div>
+    </div>
+
+    <div id="right">
+        <h2>広島市の天気</h2>
+        <div id="weather">
+        </div>
+    </div>
+
+    <script>
+        function updateTime() {
+            const timeElement = document.getElementById("time");
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            timeElement.innerHTML = `${hours}:${minutes}:${seconds}`;
+        }
+
+        function updateTemperatureDisplay(data) {
+            const temperatureList = document.getElementById('temperature-list');
+            temperatureList.innerHTML = '';
+
+            Object.keys(data).forEach((port) => {
+                if (port !== 'weather' && port !== 'heatstroke_risk_level') { // 修正箇所: heatstroke_risk_level を除外
+                    const item = data[port];
+                    const listItem = document.createElement('li');
+                    listItem.className = 'temperature-item';
+                    listItem.innerHTML = `
+                        <strong>${port}</strong>
+                        <p>現在の温度: ${item.current_temp}℃</p>
+                        <p>前回の温度: ${item.previous_temp}℃</p>
+                        <p>時間: ${item.time}</p>
+                        ${item.error ? `<p class="error">${item.error}</p>` : ''}
+                    `;
+                    temperatureList.appendChild(listItem);
+                }
+            });
+
+            // 天気情報の表示
+            const weatherElement = document.getElementById('weather');
+            if (data.weather && data.weather.temperature) {
+                let heatstrokeRiskColor = '';
+                if (data.heatstroke_risk_level === '危険') {
+                    heatstrokeRiskColor = 'red';
+                } else if (data.heatstroke_risk_level === '厳重警戒') {
+                    heatstrokeRiskColor = 'orange';
+                } else if (data.heatstroke_risk_level === '警戒') {
+                    heatstrokeRiskColor = 'yellow';
+                } else if (data.heatstroke_risk_level === '注意') {
+                    heatstrokeRiskColor = 'blue';
+                } else {
+                    heatstrokeRiskColor = 'green';
+                }
+                weatherElement.innerHTML = `
+                    <p>現在の温度: ${data.weather.temperature}℃</p>
+                    <p>天気: ${data.weather.description}</p>
+                    <p id="heatstroke-risk" style="color: ${heatstrokeRiskColor};">熱中症危険度: ${data.heatstroke_risk_level}</p>
+                `;
+            } else if (data.weather && data.weather.error) {
+                weatherElement.innerHTML = `<p class="error">${data.weather.error}</p>`;
+            }
+        }
+
+        function fetchData() {
+            fetch('/get_temperature')
+                .then(response => response.json())
+                .then(data => {
+                    updateTemperatureDisplay(data);
+                    updateTime();
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        // 初期表示と定期更新
+        setInterval(fetchData, 1000);
+        window.onload = fetchData;
+    </script>
 </body>
 </html>
